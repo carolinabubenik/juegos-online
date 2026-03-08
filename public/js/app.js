@@ -74,6 +74,50 @@ const instructions = {
       </ul>
     `
   },
+  memotest: {
+    title: '🧠 Memotest',
+    body: `
+      <h3>Objetivo</h3>
+      <p>Encontrar todos los pares de cartas iguales en la menor cantidad de intentos.</p>
+      <h3>Cómo jugar</h3>
+      <ul>
+        <li>Hacé click en una carta para darla vuelta</li>
+        <li>Luego hacé click en otra carta para buscar su par</li>
+        <li>Si las dos cartas son iguales, ¡quedan descubiertas!</li>
+        <li>Si no son iguales, se vuelven a dar vuelta</li>
+        <li>Intentá recordar dónde está cada carta</li>
+        <li>¡Ganás cuando encontrás todos los pares!</li>
+      </ul>
+      <h3>Dificultad</h3>
+      <ul>
+        <li><b>Fácil:</b> 12 cartas (6 pares)</li>
+        <li><b>Normal:</b> 20 cartas (10 pares)</li>
+        <li><b>Difícil:</b> 30 cartas (15 pares)</li>
+      </ul>
+    `
+  },
+  buscaminas: {
+    title: '💣 Buscaminas',
+    body: `
+      <h3>Objetivo</h3>
+      <p>Descubrir todas las casillas que no tienen minas.</p>
+      <h3>Cómo jugar</h3>
+      <ul>
+        <li>Hacé click en una casilla para descubrirla</li>
+        <li>El número indica cuántas minas hay alrededor</li>
+        <li>Si la casilla está vacía, se abren automáticamente las vecinas</li>
+        <li>Click derecho (o botón 🚩) para marcar donde creés que hay una mina</li>
+        <li>¡Si pisás una mina, perdés!</li>
+        <li>Ganás cuando descubrís todas las casillas sin minas</li>
+      </ul>
+      <h3>Dificultad</h3>
+      <ul>
+        <li><b>Fácil:</b> 8×8 con 10 minas</li>
+        <li><b>Normal:</b> 10×10 con 20 minas</li>
+        <li><b>Difícil:</b> 12×12 con 35 minas</li>
+      </ul>
+    `
+  },
   generala: {
     title: '🎲 Generala',
     body: `
@@ -107,6 +151,19 @@ document.querySelectorAll('.game-card:not(.coming-soon)').forEach(card => {
       return;
     }
     currentGame = card.dataset.game;
+
+    // Solo games go directly to the game
+    if (card.dataset.mode === 'solo') {
+      const soloGames = { memotest: MemotestGame, buscaminas: BuscaminasGame };
+      const info = instructions[currentGame];
+      $('game-title-bar').textContent = info.title;
+      $('game-players').textContent = name;
+      $('game-area').innerHTML = '';
+      showScreen('game');
+      gameInstance = new soloGames[currentGame]($('game-area'), name);
+      return;
+    }
+
     $('lobby-game-title').textContent = instructions[currentGame].title;
     showScreen('lobby');
   });

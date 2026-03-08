@@ -39,6 +39,18 @@
           <h3>Generala</h3>
           <p>Tirá los dados y anotá la mejor jugada</p>
         </div>
+        <div class="game-card solo-game" data-game="memotest" data-mode="solo">
+          <div class="game-icon">🧠</div>
+          <h3>Memotest</h3>
+          <span class="solo-badge">1 jugador</span>
+          <p>Encontrá todos los pares de cartas iguales</p>
+        </div>
+        <div class="game-card solo-game" data-game="buscaminas" data-mode="solo">
+          <div class="game-icon">💣</div>
+          <h3>Buscaminas</h3>
+          <span class="solo-badge">1 jugador</span>
+          <p>Descubrí las casillas sin pisar las minas</p>
+        </div>
         <div class="game-card coming-soon">
           <div class="game-icon">🃏</div>
           <h3>Próximamente...</h3>
@@ -98,7 +110,7 @@
     <div id="notification" class="notification"></div>
 
     <!-- Build number -->
-    <div style="position:fixed;bottom:4px;right:8px;font-size:.65em;color:#555;">v4</div>
+    <div style="position:fixed;bottom:4px;right:8px;font-size:.65em;color:#555;">v5</div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -107,5 +119,7 @@
   <script src="/js/games/ahorcado.js"></script>
   <script src="/js/games/naval.js"></script>
   <script src="/js/games/generala.js"></script>
+  <script src="/js/games/memotest.js"></script>
+  <script src="/js/games/buscaminas.js"></script>
 </body>
 </html>

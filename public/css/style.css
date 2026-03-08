@@ -271,6 +271,80 @@ body {
 .score-table .scored { color: var(--yellow); font-weight: 700; }
 .score-table .total-row { background: var(--bg3); font-weight: 700; color: var(--green); }
 
+/* Solo badge */
+.solo-badge {
+  display: inline-block; background: var(--accent2); color: var(--blue);
+  font-size: .7em; padding: 2px 8px; border-radius: 10px; margin-bottom: 6px;
+}
+
+/* Memotest */
+.memo-container { text-align: center; width: 100%; max-width: 700px; }
+.memo-stats {
+  display: flex; justify-content: center; gap: 25px; margin-bottom: 15px;
+  font-size: 1.05em; color: var(--text2);
+}
+.memo-stats b, .memo-stats span span { color: var(--yellow); }
+.memo-grid {
+  display: grid; gap: 10px; justify-content: center;
+  max-width: 600px; margin: 0 auto;
+}
+.memo-card {
+  width: 80px; height: 80px; perspective: 600px; cursor: pointer;
+  margin: 0 auto;
+}
+.memo-card-inner {
+  width: 100%; height: 100%; position: relative;
+  transition: transform .4s ease; transform-style: preserve-3d;
+}
+.memo-card.flipped .memo-card-inner,
+.memo-card.matched .memo-card-inner { transform: rotateY(180deg); }
+.memo-card-front, .memo-card-back {
+  position: absolute; inset: 0; backface-visibility: hidden;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; font-size: 2em;
+}
+.memo-card-front {
+  background: linear-gradient(135deg, var(--accent2), var(--bg3));
+  border: 2px solid var(--accent2); color: var(--text2); font-weight: 700;
+}
+.memo-card:hover .memo-card-front { border-color: var(--accent); }
+.memo-card-back {
+  background: var(--bg2); border: 2px solid var(--accent);
+  transform: rotateY(180deg);
+}
+.memo-card.matched .memo-card-back {
+  border-color: var(--green); background: #16653433;
+  animation: matchPulse .4s ease;
+}
+@keyframes matchPulse {
+  0%,100% { transform: rotateY(180deg) scale(1); }
+  50% { transform: rotateY(180deg) scale(1.12); }
+}
+
+/* Buscaminas */
+.bm-container { text-align: center; width: 100%; max-width: 600px; }
+.bm-stats {
+  display: flex; justify-content: center; gap: 20px; align-items: center;
+  margin-bottom: 15px; font-size: 1.05em; color: var(--text2);
+}
+.bm-grid {
+  display: grid; gap: 2px; justify-content: center;
+  max-width: 500px; margin: 0 auto;
+}
+.bm-cell {
+  width: 38px; height: 38px; background: var(--accent2);
+  border-radius: 4px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 1em; font-weight: 700; transition: background .15s;
+  user-select: none;
+}
+.bm-cell:hover { background: #1a4a8a; }
+.bm-cell.revealed {
+  background: var(--bg3); cursor: default; border: 1px solid #ffffff11;
+}
+.bm-cell.revealed:hover { background: var(--bg3); }
+.bm-cell.mine-hit { background: #7f1d1d; }
+.bm-cell.flagged { background: #78350f44; }
+
 /* Game over overlay */
 .game-over-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,.8); display: flex;
@@ -293,4 +367,8 @@ body {
   .naval-board { grid-template-columns: 22px repeat(10, 28px); grid-template-rows: 22px repeat(10, 28px); }
   .naval-cell { width: 28px; height: 28px; font-size: .9em; }
   .die { width: 65px; height: 65px; font-size: 2.2em; }
+  .memo-card { width: 60px; height: 60px; }
+  .memo-card-front, .memo-card-back { font-size: 1.5em; }
+  .memo-grid { gap: 6px; }
+  .bm-cell { width: 30px; height: 30px; font-size: .85em; }
 }
