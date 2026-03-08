@@ -158,6 +158,9 @@ body {
 .syt-cell.snake-end { background: #991b1b44; }
 .syt-cell.ladder-start { background: #14532d; }
 .syt-cell.ladder-end { background: #16653444; }
+.syt-cell {
+  transition: transform .15s, box-shadow .15s;
+}
 .syt-cell .player-marker {
   width: 16px; height: 16px; border-radius: 50%; position: absolute;
   border: 2px solid #fff; box-shadow: 0 0 6px rgba(0,0,0,.5);
@@ -244,9 +247,9 @@ body {
 .dice-area { text-align: center; min-width: 300px; }
 .dice-container { display: flex; gap: 12px; justify-content: center; margin: 15px 0; flex-wrap: wrap; }
 .die {
-  width: 60px; height: 60px; background: var(--bg2); border: 3px solid var(--accent2);
-  border-radius: 10px; display: flex; align-items: center; justify-content: center;
-  font-size: 1.8em; cursor: pointer; transition: all .2s; user-select: none;
+  width: 80px; height: 80px; background: var(--bg2); border: 3px solid var(--accent2);
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 2.8em; cursor: pointer; transition: all .2s; user-select: none;
 }
 .die.held { border-color: var(--yellow); background: #78350f44; }
 .die.rolling { animation: dieRoll .4s ease; }
@@ -289,5 +292,5 @@ body {
   .syt-cell { width: 34px; height: 34px; font-size: .55em; }
   .naval-board { grid-template-columns: 22px repeat(10, 28px); grid-template-rows: 22px repeat(10, 28px); }
   .naval-cell { width: 28px; height: 28px; font-size: .9em; }
-  .die { width: 50px; height: 50px; font-size: 1.4em; }
+  .die { width: 65px; height: 65px; font-size: 2.2em; }
 }

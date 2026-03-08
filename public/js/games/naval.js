@@ -21,8 +21,7 @@ class NavalGame {
     // Boards: 0=empty, 1=ship, 2=hit, 3=miss, 4=sunk
     this.myBoard = Array.from({ length: 10 }, () => Array(10).fill(0));
     this.enemyBoard = Array.from({ length: 10 }, () => Array(10).fill(0));
-    // Track enemy ships for sinking
-    this.myShipCells = []; // [{cells: [[r,c],...], size, sunk}]
+    this.myShipCells = [];
     this.enemyHits = 0;
     this.myHits = 0;
     this.totalShipCells = 5 + 4 + 3 + 3 + 2; // 17
@@ -33,6 +32,8 @@ class NavalGame {
   render() {
     if (this.phase === 'setup') {
       this.renderSetup();
+    } else if (this.phase === 'waiting') {
+      this.renderWaiting();
     } else {
       this.renderBattle();
     }
@@ -42,6 +43,7 @@ class NavalGame {
     this.container.innerHTML = `
       <div class="naval-container" style="flex-direction:column;align-items:center;">
         <h2 style="color:var(--yellow);margin-bottom:10px;">Ubicá tus barcos</h2>
+        <p style="color:var(--text2);font-size:.85em;margin-bottom:8px;">Los barcos no pueden tocarse entre sí (ni en diagonal)</p>
         <div class="naval-ships-list" id="ships-list"></div>
         <div style="margin:10px 0;">
           <button class="btn btn-secondary btn-small" id="btn-rotate">Rotar (${this.horizontal ? 'Horizontal' : 'Vertical'})</button>
@@ -65,14 +67,25 @@ class NavalGame {
     document.getElementById('btn-ready').addEventListener('click', () => {
       this.ready[this.me] = true;
       this.socket.emit('game-action', { type: 'ready' });
-      this.container.innerHTML = `
-        <div style="text-align:center;margin-top:80px;">
-          <h2 style="color:var(--yellow);">¡Listo!</h2>
-          <p style="color:var(--text2);">Esperando al rival...</p>
-          <div class="loader" style="margin:20px auto;"></div>
-        </div>
-      `;
+      if (this.ready[1 - this.me]) {
+        // Other player already ready
+        this.phase = 'battle';
+        this.render();
+      } else {
+        this.phase = 'waiting';
+        this.render();
+      }
     });
+  }
+
+  renderWaiting() {
+    this.container.innerHTML = `
+      <div style="text-align:center;margin-top:80px;">
+        <h2 style="color:var(--yellow);">¡Listo!</h2>
+        <p style="color:var(--text2);">Esperando al rival...</p>
+        <div class="loader" style="margin:20px auto;"></div>
+      </div>
+    `;
   }
 
   renderShipsList() {
@@ -96,7 +109,6 @@ class NavalGame {
     board.innerHTML = '';
     const cols = ' ABCDEFGHIJ';
 
-    // Header row
     for (let c = 0; c <= 10; c++) {
       const h = document.createElement('div');
       h.className = 'naval-header';
@@ -105,7 +117,6 @@ class NavalGame {
     }
 
     for (let r = 0; r < 10; r++) {
-      // Row header
       const rh = document.createElement('div');
       rh.className = 'naval-header';
       rh.textContent = r + 1;
@@ -124,7 +135,8 @@ class NavalGame {
         cell.addEventListener('contextmenu', (e) => {
           e.preventDefault();
           this.horizontal = !this.horizontal;
-          document.getElementById('btn-rotate').textContent = `Rotar (${this.horizontal ? 'Horizontal' : 'Vertical'})`;
+          const btn = document.getElementById('btn-rotate');
+          if (btn) btn.textContent = `Rotar (${this.horizontal ? 'Horizontal' : 'Vertical'})`;
           this.previewShip(r, c);
         });
 
@@ -163,8 +175,30 @@ class NavalGame {
     return cells;
   }
 
+  // Check adjacency: no ship can touch another (including diagonals)
+  hasAdjacentShip(cells) {
+    for (const [r, c] of cells) {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10) {
+            if (this.myBoard[nr][nc] === 1) {
+              // Check it's not one of the cells we're placing
+              const isSelf = cells.some(([cr, cc]) => cr === nr && cc === nc);
+              if (!isSelf) return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   canPlace(cells) {
-    return cells.every(([r, c]) => r >= 0 && r < 10 && c >= 0 && c < 10 && this.myBoard[r][c] === 0);
+    const inBounds = cells.every(([r, c]) => r >= 0 && r < 10 && c >= 0 && c < 10 && this.myBoard[r][c] === 0);
+    if (!inBounds) return false;
+    return !this.hasAdjacentShip(cells);
   }
 
   placeShip(r, c) {
@@ -178,14 +212,12 @@ class NavalGame {
     ship.placed = true;
     this.myShipCells.push({ cells, size: ship.size, sunk: false });
 
-    // Select next unplaced ship
     const next = this.ships.findIndex(s => !s.placed);
     if (next >= 0) this.selectedShip = next;
 
     this.renderShipsList();
     this.renderSetupBoard();
 
-    // Enable ready button if all placed
     if (this.ships.every(s => s.placed)) {
       document.getElementById('btn-ready').disabled = false;
     }
@@ -271,8 +303,8 @@ class NavalGame {
   onAction(data) {
     if (data.type === 'ready') {
       this.ready[data.playerIndex] = true;
-      if (this.ready[this.me]) {
-        // Both ready, start battle
+      // If I'm already ready and opponent just got ready, start battle
+      if (this.ready[this.me] && this.ready[1 - this.me]) {
         this.phase = 'battle';
         this.render();
       }
@@ -285,7 +317,6 @@ class NavalGame {
       let sunkShip = null;
       if (hit) {
         this.enemyHits++;
-        // Check if a ship is sunk
         for (const ship of this.myShipCells) {
           if (!ship.sunk && ship.cells.some(([sr, sc]) => sr === r && sc === c)) {
             if (ship.cells.every(([sr, sc]) => this.myBoard[sr][sc] === 2)) {
@@ -312,7 +343,6 @@ class NavalGame {
     } else if (data.type === 'shoot-result') {
       const { r, c, hit, sunkShip, gameOver } = data;
       if (sunkShip) {
-        // Mark all cells of sunk ship (we find connected hits)
         this.markSunk(r, c);
       } else {
         this.enemyBoard[r][c] = hit ? 2 : 3;
@@ -329,7 +359,6 @@ class NavalGame {
   }
 
   markSunk(r, c) {
-    // BFS to find connected hit cells and mark as sunk
     const visited = new Set();
     const queue = [[r, c]];
     this.enemyBoard[r][c] = 4;
