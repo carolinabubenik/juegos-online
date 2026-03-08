@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juegos Online</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Landing -->
+    <div id="landing" class="screen active">
+      <div class="header">
+        <h1>🎮 Juegos Online</h1>
+        <p class="subtitle">Elegí un juego y jugá con otra persona en tiempo real</p>
+      </div>
+      <div class="name-input-section">
+        <label for="player-name">Tu nombre:</label>
+        <input type="text" id="player-name" placeholder="Ingresá tu nombre" maxlength="15" autocomplete="off">
+      </div>
+      <div class="games-grid">
+        <div class="game-card" data-game="serpientes">
+          <div class="game-icon">🐍🪜</div>
+          <h3>Túneles y Toboganes</h3>
+          <p>Tirá los dados y avanzá. ¡Cuidado con los toboganes!</p>
+        </div>
+        <div class="game-card" data-game="ahorcado">
+          <div class="game-icon">💀</div>
+          <h3>Ahorcado</h3>
+          <p>Adiviná la palabra antes de que se complete el dibujo</p>
+        </div>
+        <div class="game-card" data-game="naval">
+          <div class="game-icon">🚢</div>
+          <h3>Batalla Naval</h3>
+          <p>Ubicá tus barcos y hundí los del rival</p>
+        </div>
+        <div class="game-card" data-game="generala">
+          <div class="game-icon">🎲</div>
+          <h3>Generala</h3>
+          <p>Tirá los dados y anotá la mejor jugada</p>
+        </div>
+        <div class="game-card coming-soon">
+          <div class="game-icon">🃏</div>
+          <h3>Próximamente...</h3>
+          <p>Más juegos en camino</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lobby -->
+    <div id="lobby" class="screen">
+      <div class="lobby-box">
+        <h2 id="lobby-game-title"></h2>
+        <div class="lobby-actions">
+          <button id="btn-create" class="btn btn-primary">Crear Sala</button>
+          <div class="divider">o</div>
+          <div class="join-section">
+            <input type="text" id="room-code-input" placeholder="Código de sala" maxlength="4" autocomplete="off" style="text-transform:uppercase">
+            <button id="btn-join" class="btn btn-secondary">Unirse</button>
+          </div>
+        </div>
+        <button id="btn-instructions" class="btn btn-link">📖 Instrucciones</button>
+        <button id="btn-back-lobby" class="btn btn-link">← Volver</button>
+      </div>
+    </div>
+
+    <!-- Waiting Room -->
+    <div id="waiting" class="screen">
+      <div class="waiting-box">
+        <h2>Esperando rival...</h2>
+        <p>Compartí este código:</p>
+        <div class="room-code" id="display-room-code"></div>
+        <div class="loader"></div>
+        <button id="btn-cancel-wait" class="btn btn-link">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div id="instructions-modal" class="modal">
+      <div class="modal-content">
+        <button class="modal-close" id="close-instructions">&times;</button>
+        <h2 id="instructions-title"></h2>
+        <div id="instructions-body"></div>
+      </div>
+    </div>
+
+    <!-- Game Container -->
+    <div id="game-container" class="screen">
+      <div class="game-header">
+        <span id="game-title-bar"></span>
+        <span id="game-players"></span>
+        <button id="btn-leave" class="btn btn-small btn-danger">Salir</button>
+      </div>
+      <div id="game-area"></div>
+    </div>
+
+    <!-- Notifications -->
+    <div id="notification" class="notification"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/games/serpientes.js"></script>
+  <script src="/js/games/ahorcado.js"></script>
+  <script src="/js/games/naval.js"></script>
+  <script src="/js/games/generala.js"></script>
+</body>
+</html>
