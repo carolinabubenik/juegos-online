@@ -64,9 +64,16 @@ class AhorcadoGame {
 
   renderGuessPhase() {
     const isGuesser = this.chooser !== this.me;
-    const maskedWord = this.word
-      ? this.word.split('').map(l => this.guessed.includes(l) ? l : '_').join('')
-      : '_'.repeat(this.wordLength || 5);
+    let maskedWord;
+    if (this.word) {
+      // Chooser knows the word, or guesser got it revealed
+      maskedWord = this.word.split('').map(l => this.guessed.includes(l) ? l : '_').join('');
+    } else if (this.revealedMask) {
+      // Guesser uses the mask sent by the chooser
+      maskedWord = this.revealedMask;
+    } else {
+      maskedWord = '_'.repeat(this.wordLength || 5);
+    }
 
     this.container.innerHTML = `
       <div class="ahorcado-container">
@@ -96,10 +103,12 @@ class AhorcadoGame {
 
   renderKeyboard() {
     const letters = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ';
+    // For the guesser, check if letter appears in the revealed mask
+    const knownLetters = this.word || this.revealedMask || '';
     let html = '<div class="keyboard">';
     for (const l of letters) {
       const used = this.guessed.includes(l);
-      const correct = used && this.word && this.word.includes(l);
+      const correct = used && knownLetters.includes(l);
       const cls = used ? (correct ? 'correct' : 'wrong') : '';
       html += `<button class="key-btn ${cls}" data-letter="${l}" ${used ? 'disabled' : ''}>${l}</button>`;
     }
@@ -151,11 +160,15 @@ class AhorcadoGame {
       // Check win/lose
       const allFound = this.word.split('').every(l => this.guessed.includes(l));
 
+      // Build the partially revealed word for the guesser
+      const mask = this.word.split('').map(l => this.guessed.includes(l) ? l : '_').join('');
+
       this.socket.emit('game-action', {
         type: 'guess-result',
         letter,
         hit,
         errors: this.errors,
+        mask,
         revealed: allFound ? this.word : null,
         gameOver: allFound || this.errors >= this.maxErrors,
         guesserWins: allFound
@@ -173,18 +186,10 @@ class AhorcadoGame {
         }, 500);
       }
     } else if (data.type === 'guess-result') {
-      // I'm the guesser
-      if (data.hit) {
-        // Need to know which positions - we reconstruct from guessed letters
-      }
-      if (!data.hit) this.errors = data.errors;
+      // I'm the guesser - update state from chooser's response
+      this.errors = data.errors;
+      this.revealedMask = data.mask;
       if (data.revealed) this.word = data.revealed;
-      // Mark letter
-      const btn = this.container.querySelector(`.key-btn[data-letter="${data.letter}"]`);
-      if (btn) {
-        btn.classList.add(data.hit ? 'correct' : 'wrong');
-        btn.disabled = true;
-      }
 
       this.render();
 
@@ -223,6 +228,7 @@ class AhorcadoGame {
     this.chooser = 1 - this.chooser; // swap roles
     this.phase = 'choose';
     this.word = '';
+    this.revealedMask = '';
     this.guessed = [];
     this.errors = 0;
     this.render();
