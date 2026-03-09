@@ -4,7 +4,10 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  pingInterval: 10000,
+  pingTimeout: 20000
+});
 
 app.use(express.static('public'));
 
@@ -20,6 +23,26 @@ function generateRoomCode() {
 
 io.on('connection', (socket) => {
   console.log('Usuario conectado:', socket.id);
+
+  // Keepalive
+  socket.on('ping-keep', () => socket.emit('pong-keep'));
+
+  // Rejoin room after reconnect
+  socket.on('rejoin-room', (data) => {
+    const room = rooms.get(data.code);
+    if (!room) return socket.emit('error-msg', 'Sala expirada');
+
+    const pi = room.players.findIndex(p => p.name === data.playerName);
+    if (pi === -1) return socket.emit('error-msg', 'No estás en esta sala');
+
+    // Update socket id for this player
+    room.players[pi].id = socket.id;
+    socket.join(data.code);
+    socket.roomCode = data.code;
+    socket.playerIndex = pi;
+    socket.emit('rejoin-ok', { playerIndex: pi });
+    console.log(`${data.playerName} reconectado a sala ${data.code}`);
+  });
 
   socket.on('create-room', (data) => {
     let code = generateRoomCode();
@@ -64,7 +87,6 @@ io.on('connection', (socket) => {
   socket.on('game-action', (data) => {
     const room = rooms.get(socket.roomCode);
     if (!room) return;
-    // Broadcast to the other player
     socket.to(socket.roomCode).emit('game-action', {
       ...data,
       playerIndex: socket.playerIndex
@@ -80,15 +102,30 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', (reason) => {
+    console.log('Usuario desconectado:', socket.id, reason);
     if (socket.roomCode) {
       const room = rooms.get(socket.roomCode);
       if (room) {
-        io.to(socket.roomCode).emit('player-disconnected');
-        rooms.delete(socket.roomCode);
+        // Don't delete room immediately - give time to reconnect
+        const playerName = room.players.find(p => p.id === socket.id)?.name;
+        socket.to(socket.roomCode).emit('player-away', { playerName });
+
+        // Delete room after 2 minutes if player doesn't reconnect
+        setTimeout(() => {
+          const currentRoom = rooms.get(socket.roomCode);
+          if (currentRoom) {
+            const player = currentRoom.players.find(p => p.id === socket.id);
+            if (player) {
+              // Player never reconnected (still has old socket id)
+              io.to(socket.roomCode).emit('player-disconnected');
+              rooms.delete(socket.roomCode);
+              console.log(`Sala ${socket.roomCode} eliminada por timeout`);
+            }
+          }
+        }, 120000);
       }
     }
-    console.log('Usuario desconectado:', socket.id);
   });
 
   socket.on('leave-room', () => {

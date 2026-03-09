@@ -1,12 +1,57 @@
-const socket = io();
+const socket = io({
+  reconnection: true,
+  reconnectionAttempts: 10,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000
+});
 
 let currentGame = null;
 let playerIndex = -1;
 let playerNames = [];
 let gameInstance = null;
+let currentRoomCode = null;
 
 // DOM
 const $ = id => document.getElementById(id);
+
+// --- LocalStorage for name ---
+const savedName = localStorage.getItem('playerName');
+if (savedName) $('player-name').value = savedName;
+
+$('player-name').addEventListener('input', () => {
+  localStorage.setItem('playerName', $('player-name').value.trim());
+});
+
+// --- Keepalive (prevents Render free tier from sleeping the connection) ---
+setInterval(() => {
+  if (socket.connected) socket.emit('ping-keep');
+}, 15000);
+
+// --- Connection status ---
+socket.on('connect', () => {
+  // If we were in a room, try to rejoin
+  if (currentRoomCode && playerNames.length) {
+    const name = $('player-name').value.trim();
+    socket.emit('rejoin-room', { code: currentRoomCode, playerName: name });
+  }
+});
+
+socket.on('rejoin-ok', (data) => {
+  playerIndex = data.playerIndex;
+  notify('Reconectado', 'success');
+});
+
+socket.on('disconnect', () => {
+  if (currentRoomCode) {
+    notify('Conexión perdida, reconectando...', 'error');
+  }
+});
+
+socket.on('player-away', (data) => {
+  if (data.playerName) {
+    notify(`${data.playerName} se desconectó, esperando reconexión...`, 'error');
+  }
+});
 
 const screens = {
   landing: $('landing'),
@@ -150,6 +195,8 @@ document.querySelectorAll('.game-card:not(.coming-soon)').forEach(card => {
       $('player-name').focus();
       return;
     }
+    // Save name
+    localStorage.setItem('playerName', name);
     currentGame = card.dataset.game;
 
     // Solo games go directly to the game
@@ -202,6 +249,7 @@ $('btn-back-lobby').addEventListener('click', () => showScreen('landing'));
 // Cancel wait
 $('btn-cancel-wait').addEventListener('click', () => {
   socket.emit('leave-room');
+  currentRoomCode = null;
   showScreen('lobby');
 });
 
@@ -210,18 +258,21 @@ $('btn-leave').addEventListener('click', () => {
   if (gameInstance && gameInstance.destroy) gameInstance.destroy();
   gameInstance = null;
   socket.emit('leave-room');
+  currentRoomCode = null;
   showScreen('landing');
 });
 
 // Socket events
 socket.on('room-created', (data) => {
   playerIndex = data.playerIndex;
+  currentRoomCode = data.code;
   $('display-room-code').textContent = data.code;
   showScreen('waiting');
 });
 
 socket.on('room-joined', (data) => {
   playerIndex = data.playerIndex;
+  currentRoomCode = data.code;
 });
 
 socket.on('error-msg', (msg) => notify(msg, 'error'));
@@ -242,6 +293,7 @@ socket.on('player-disconnected', () => {
   notify('El otro jugador se desconectó', 'error');
   if (gameInstance && gameInstance.destroy) gameInstance.destroy();
   gameInstance = null;
+  currentRoomCode = null;
   setTimeout(() => showScreen('landing'), 2000);
 });
 
@@ -284,6 +336,7 @@ function createGameOverOverlay(msg, isWinner, socket) {
     if (gameInstance && gameInstance.destroy) gameInstance.destroy();
     gameInstance = null;
     socket.emit('leave-room');
+    currentRoomCode = null;
     showScreen('landing');
   });
 
