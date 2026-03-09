@@ -253,14 +253,47 @@ $('btn-cancel-wait').addEventListener('click', () => {
   showScreen('lobby');
 });
 
-// Leave game
+// Leave game with confirmation
 $('btn-leave').addEventListener('click', () => {
-  if (gameInstance && gameInstance.destroy) gameInstance.destroy();
-  gameInstance = null;
-  socket.emit('leave-room');
-  currentRoomCode = null;
-  showScreen('landing');
+  // Solo games don't need confirmation
+  if (!currentRoomCode) {
+    if (gameInstance && gameInstance.destroy) gameInstance.destroy();
+    gameInstance = null;
+    showScreen('landing');
+    return;
+  }
+  showLeaveConfirm();
 });
+
+function showLeaveConfirm() {
+  const overlay = document.createElement('div');
+  overlay.className = 'game-over-overlay';
+  overlay.id = 'leave-confirm';
+  overlay.innerHTML = `
+    <div class="game-over-box">
+      <h2 style="color:var(--yellow);font-size:1.4em;">¿Seguro querés salir?</h2>
+      <p style="color:var(--text2);margin:10px 0;">Se terminará la partida para ambos jugadores</p>
+      <div class="buttons" style="margin-top:20px;">
+        <button class="btn btn-danger" id="btn-leave-yes">Sí, salir</button>
+        <button class="btn btn-secondary" id="btn-leave-no">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#btn-leave-yes').addEventListener('click', () => {
+    overlay.remove();
+    if (gameInstance && gameInstance.destroy) gameInstance.destroy();
+    gameInstance = null;
+    socket.emit('leave-room');
+    currentRoomCode = null;
+    showScreen('landing');
+  });
+
+  overlay.querySelector('#btn-leave-no').addEventListener('click', () => {
+    overlay.remove();
+  });
+}
 
 // Socket events
 socket.on('room-created', (data) => {
@@ -308,6 +341,14 @@ socket.on('rematch-request', () => {
 
 socket.on('rematch-start', () => {
   if (gameInstance && gameInstance.onRematchStart) gameInstance.onRematchStart();
+});
+
+// Warn before closing tab if in a multiplayer game
+window.addEventListener('beforeunload', (e) => {
+  if (currentRoomCode) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
 });
 
 // Utility used by games
